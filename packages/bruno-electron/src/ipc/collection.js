@@ -1783,10 +1783,17 @@ const registerRendererEventHandlers = (mainWindow, watcher) => {
         interpolateVars(requestCopy, envVars, runtimeVariables, processEnvVars);
         const globalEnvironmentVariables = collection.globalEnvironmentVariables;
 
+        // Use the refresh/token URL for cert and proxy config lookup, not the main request URL.
+        // This ensures the correct client certificate is selected for the OAuth token endpoint.
+        // See: https://github.com/usebruno/bruno/issues/5782
+        const { accessTokenUrl, refreshTokenUrl } = requestCopy.oauth2 || {};
+        const tokenUrlForRefresh = refreshTokenUrl || accessTokenUrl;
+        const refreshRequestForConfig = tokenUrlForRefresh ? { ...requestCopy, url: tokenUrlForRefresh } : requestCopy;
+
         const certsAndProxyConfig = await getCertsAndProxyConfig({
           collectionUid,
           collection,
-          request: requestCopy,
+          request: refreshRequestForConfig,
           envVars,
           runtimeVariables,
           processEnvVars,
